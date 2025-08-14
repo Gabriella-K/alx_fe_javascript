@@ -53,16 +53,19 @@
     }
     .action-buttons {
       margin: 20px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .import-export {
-      margin-top: 10px;
+    .filter-section {
+      margin: 15px 0;
     }
   </style>
 </head>
 <body>
   <h1>Dynamic Quote Generator</h1>
   
-  <div>
+  <div class="filter-section">
     <label for="categoryFilter">Filter by category:</label>
     <select id="categoryFilter">
       <option value="all">All Categories</option>
@@ -76,9 +79,9 @@
   <button id="newQuote">Show New Quote</button>
   
   <div class="action-buttons">
-    <button id="exportQuotes">Export Quotes as JSON</button>
+    <button id="exportQuotes">Export Quotes</button>
     <div class="import-export">
-      <label for="importFile">Import Quotes from JSON:</label>
+      <label for="importFile">Import Quotes:</label>
       <input type="file" id="importFile" accept=".json" />
     </div>
   </div>
