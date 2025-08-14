@@ -20,7 +20,7 @@
       min-height: 100px;
     }
     button {
-      background-color: #183919;
+      background-color: #4CAF50;
       color: white;
       border: none;
       padding: 10px 15px;
@@ -29,7 +29,7 @@
       cursor: pointer;
     }
     button:hover {
-      background-color: #122d14;
+      background-color: #45a049;
     }
     select, input {
       padding: 8px;
@@ -51,6 +51,12 @@
       font-size: 0.8em;
       margin-left: 10px;
     }
+    .action-buttons {
+      margin: 20px 0;
+    }
+    .import-export {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -69,20 +75,11 @@
   
   <button id="newQuote">Show New Quote</button>
   
-  <div class="form-container">
-    <h3>Add New Quote</h3>
-    <div>
-      <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
-      <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-      <button onclick="addQuote()">Add Quote</button>
-    </div>
-  </div>
-  
-  <div class="form-container">
-    <h3>Add New Category</h3>
-    <div>
-      <input id="newCategory" type="text" placeholder="Enter new category" />
-      <button onclick="addCategory()">Add Category</button>
+  <div class="action-buttons">
+    <button id="exportQuotes">Export Quotes as JSON</button>
+    <div class="import-export">
+      <label for="importFile">Import Quotes from JSON:</label>
+      <input type="file" id="importFile" accept=".json" />
     </div>
   </div>
   
