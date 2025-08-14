@@ -1,17 +1,17 @@
-// Configuration
-const API_URL = 'https://jsonplaceholder.typicode.com/posts'; // Mock API
-const SYNC_INTERVAL = 30000; // 30 seconds
+
+const API_URL = 'https://jsonplaceholder.typicode.com/posts'; 
+const SYNC_INTERVAL = 30000; 
 const LAST_SYNC_KEY = 'lastSyncTimestamp';
 const SERVER_QUOTES_KEY = 'serverQuotes';
 
-// State
+
 let quotes = [];
 let serverQuotes = [];
 let currentCategory = 'all';
 let syncInterval;
 let lastSyncTime = null;
 
-// DOM Elements
+
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
 const categoryFilter = document.getElementById('categoryFilter');
@@ -20,7 +20,7 @@ const importFile = document.getElementById('importFile');
 const syncNowBtn = document.getElementById('syncNow');
 const syncStatus = document.getElementById('syncStatus');
 
-// Initialize app
+
 async function init() {
   loadQuotes();
   loadServerQuotes();
@@ -30,24 +30,24 @@ async function init() {
   restoreLastCategory();
   filterQuotes();
   startSyncInterval();
-  await syncQuotes(); // Initial sync
+  await syncQuotes(); 
 }
 
-// Core sync function with POST support
+
 async function syncQuotes() {
   try {
-    // 1. First push local changes to server using POST
+    
     const localChanges = quotes.filter(q => q.source === 'local' && !q.synced);
     if (localChanges.length > 0) {
       await postQuotesToServer(localChanges);
-      // Mark quotes as synced
+    
       quotes.forEach(q => {
         if (q.source === 'local') q.synced = true;
       });
       saveQuotes();
     }
 
-    // 2. Then fetch latest quotes from server
+    
     const freshQuotes = await fetchQuotesFromServer();
     const newQuotes = findNewQuotes(freshQuotes);
     
@@ -60,14 +60,16 @@ async function syncQuotes() {
     }
     
     updateSyncStatus(true);
+    alert("Quotes synced with server!");
     
   } catch (error) {
     console.error('Sync error:', error);
     updateSyncStatus(false);
+    alert("Failed to sync quotes with server!");
   }
 }
 
-// POST quotes to server
+
 async function postQuotesToServer(quotesToSend) {
   try {
     const response = await fetch(API_URL, {
@@ -92,7 +94,7 @@ async function postQuotesToServer(quotesToSend) {
   }
 }
 
-// GET quotes from server
+
 async function fetchQuotesFromServer() {
   const response = await fetch(API_URL, {
     method: 'GET',
@@ -108,7 +110,7 @@ async function fetchQuotesFromServer() {
   }));
 }
 
-// Helper functions
+
 function findNewQuotes(freshQuotes) {
   if (serverQuotes.length === 0) return freshQuotes;
   const latestServerTimestamp = Math.max(...serverQuotes.map(q => q.timestamp));
@@ -149,7 +151,7 @@ function updateUIAfterSync(newCount, conflictCount) {
   }
 }
 
-// UI Notification System
+
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
@@ -167,7 +169,7 @@ function showNotification(message, type = 'info') {
   setTimeout(() => notification.remove(), 5000);
 }
 
-// Periodic Sync Management
+
 function startSyncInterval() {
   if (syncInterval) clearInterval(syncInterval);
   syncInterval = setInterval(() => syncQuotes(), SYNC_INTERVAL);
@@ -183,7 +185,7 @@ function updateSyncStatus(success) {
   syncStatus.className = success ? 'sync-success' : 'sync-failed';
 }
 
-// Data Management
+
 function loadQuotes() {
   const saved = localStorage.getItem('quotes');
   quotes = saved ? JSON.parse(saved) : getDefaultQuotes();
@@ -209,7 +211,7 @@ function getDefaultQuotes() {
   ];
 }
 
-// UI Functions
+
 function setupEventListeners() {
   newQuoteBtn.addEventListener('click', showRandomQuote);
   categoryFilter.addEventListener('change', filterQuotes);
@@ -284,7 +286,7 @@ function showRandomQuote() {
   filterQuotes();
 }
 
-// Data Operations
+
 function addQuote() {
   const text = document.getElementById('newQuoteText').value.trim();
   const category = document.getElementById('newQuoteCategory').value.trim().toLowerCase();
@@ -368,5 +370,5 @@ function importFromJsonFile(event) {
   reader.readAsText(file);
 }
 
-// Initialize
+
 document.addEventListener('DOMContentLoaded', init);
