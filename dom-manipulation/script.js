@@ -1,6 +1,4 @@
-
 let quotes = [];
-
 
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
@@ -9,16 +7,12 @@ const exportBtn = document.getElementById('exportQuotes');
 const importFile = document.getElementById('importFile');
 let currentCategory = 'all';
 
-
 function init() {
-  
   loadQuotes();
-  
   
   newQuoteBtn.addEventListener('click', showRandomQuote);
   categoryFilter.addEventListener('change', function() {
     currentCategory = this.value;
-    
     sessionStorage.setItem('lastCategory', currentCategory);
     showRandomQuote();
   });
@@ -26,15 +20,11 @@ function init() {
   exportBtn.addEventListener('click', exportToJsonFile);
   importFile.addEventListener('change', importFromJsonFile);
   
-  
   createAddQuoteForm();
-  
   
   updateCategoryFilter();
   
-
   showRandomQuote();
-  
   
   const lastCategory = sessionStorage.getItem('lastCategory');
   if (lastCategory) {
@@ -43,13 +33,11 @@ function init() {
   }
 }
 
-
 function loadQuotes() {
   const savedQuotes = localStorage.getItem('quotes');
   if (savedQuotes) {
     quotes = JSON.parse(savedQuotes);
   } else {
-    
     quotes = [
       { text: "The only way to do great work is to love what you do.", category: "inspiration" },
       { text: "Innovation distinguishes between a leader and a follower.", category: "business" },
@@ -61,11 +49,9 @@ function loadQuotes() {
   }
 }
 
-
 function saveQuotes() {
   localStorage.setItem('quotes', JSON.stringify(quotes));
 }
-
 
 function showRandomQuote() {
   let filteredQuotes = currentCategory === 'all' 
@@ -85,10 +71,8 @@ function showRandomQuote() {
     <span class="category">${quote.category}</span>
   `;
   
-  
   sessionStorage.setItem('lastQuote', JSON.stringify(quote));
 }
-
 
 function createAddQuoteForm() {
   const formContainer = document.createElement('div');
@@ -116,10 +100,8 @@ function createAddQuoteForm() {
   formContainer.appendChild(categoryInput);
   formContainer.appendChild(addButton);
   
-
   quoteDisplay.insertAdjacentElement('afterend', formContainer);
 }
-
 
 function addQuote() {
   const textInput = document.getElementById('newQuoteText');
@@ -133,40 +115,31 @@ function addQuote() {
     return;
   }
   
-  
   quotes.push({ text, category });
   
-  
   saveQuotes();
-  
   
   textInput.value = '';
   categoryInput.value = '';
   
-  
   updateCategoryFilter(category);
   
-
   currentCategory = category;
   categoryFilter.value = category;
   showRandomQuote();
 }
 
-
 function updateCategoryFilter(newCategory = null) {
-
+ 
   const categories = [...new Set(quotes.map(quote => quote.category))];
-  
   
   if (newCategory && !categories.includes(newCategory)) {
     categories.push(newCategory);
   }
   
-  
   while (categoryFilter.options.length > 1) {
     categoryFilter.remove(1);
   }
-  
   
   categories.sort().forEach(category => {
     const option = document.createElement('option');
@@ -176,7 +149,6 @@ function updateCategoryFilter(newCategory = null) {
   });
 }
 
-
 function exportToJsonFile() {
   if (quotes.length === 0) {
     alert('No quotes to export!');
@@ -184,15 +156,21 @@ function exportToJsonFile() {
   }
   
   const dataStr = JSON.stringify(quotes, null, 2);
-  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   
-  const exportFileDefaultName = 'quotes.json';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'quotes.json';
+  document.body.appendChild(a);
+  a.click();
   
-  const linkElement = document.createElement('a');
-  linkElement.setAttribute('href', dataUri);
-  linkElement.setAttribute('download', exportFileDefaultName);
-  linkElement.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
 }
+
 function importFromJsonFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -213,12 +191,10 @@ function importFromJsonFile(event) {
         }
       }
       
-      
       quotes = importedQuotes;
       saveQuotes();
       updateCategoryFilter();
       showRandomQuote();
-      
       
       event.target.value = '';
       
@@ -234,5 +210,6 @@ function importFromJsonFile(event) {
   
   fileReader.readAsText(file);
 }
+
 
 document.addEventListener('DOMContentLoaded', init);
