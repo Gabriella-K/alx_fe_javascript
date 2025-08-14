@@ -57,8 +57,27 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-    .filter-section {
-      margin: 15px 0;
+    .sync-status {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .conflict-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px;
+      background-color: #ffcccb;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      max-width: 300px;
+    }
+    .conflict-actions {
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -80,11 +99,14 @@
   
   <div class="action-buttons">
     <button id="exportQuotes">Export Quotes</button>
+    <button id="syncNow">Sync Now</button>
     <div class="import-export">
       <label for="importFile">Import Quotes:</label>
       <input type="file" id="importFile" accept=".json" />
     </div>
   </div>
+  
+  <div id="syncStatus" class="sync-status">Last synced: Never</div>
   
   <script src="script.js"></script>
 </body>

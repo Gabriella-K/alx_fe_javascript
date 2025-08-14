@@ -1,24 +1,44 @@
 
+const API_URL = 'https://jsonplaceholder.typicode.com/posts'; 
+const SYNC_INTERVAL = 30000;
+const LAST_SYNC_KEY = 'lastSyncTimestamp';
+const SERVER_QUOTES_KEY = 'serverQuotes'
 let quotes = [];
+let serverQuotes = [];
 let currentCategory = 'all';
+let syncInterval;
+let lastSyncTime = null;
+
 
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
 const categoryFilter = document.getElementById('categoryFilter');
 const exportBtn = document.getElementById('exportQuotes');
 const importFile = document.getElementById('importFile');
+const syncNowBtn = document.getElementById('syncNow');
+const syncStatus = document.getElementById('syncStatus');
 
 
-function init() {
+async function init() {
   
   loadQuotes();
   
   
+  const savedServerQuotes = localStorage.getItem(SERVER_QUOTES_KEY);
+  if (savedServerQuotes) {
+    serverQuotes = JSON.parse(savedServerQuotes);
+  }
+  
+  
+  lastSyncTime = localStorage.getItem(LAST_SYNC_KEY);
+  updateSyncStatus();
+  
+
   newQuoteBtn.addEventListener('click', showRandomQuote);
   categoryFilter.addEventListener('change', filterQuotes);
-  
   exportBtn.addEventListener('click', exportToJsonFile);
   importFile.addEventListener('change', importFromJsonFile);
+  syncNowBtn.addEventListener('click', syncWithServer);
   
   
   createAddQuoteForm();
@@ -35,6 +55,120 @@ function init() {
   
   
   filterQuotes();
+  
+  
+  startSyncInterval();
+  
+  
+  await syncWithServer();
+}
+
+
+function startSyncInterval() {
+  if (syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(syncWithServer, SYNC_INTERVAL);
+}
+
+
+function updateSyncStatus() {
+  if (lastSyncTime) {
+    const lastSyncDate = new Date(parseInt(lastSyncTime));
+    syncStatus.textContent = `Last synced: ${lastSyncDate.toLocaleTimeString()}`;
+  } else {
+    syncStatus.textContent = 'Last synced: Never';
+  }
+}
+
+
+async function syncWithServer() {
+  try {
+    
+    const response = await fetch(API_URL);
+    const serverData = await response.json();
+    
+    
+    const newServerQuotes = serverData.slice(0, 5).map((post, index) => ({
+      id: `server-${post.id}`,
+      text: post.title,
+      category: 'server',
+      source: 'server',
+      timestamp: Date.now()
+    }));
+    
+    
+    serverQuotes = newServerQuotes;
+    localStorage.setItem(SERVER_QUOTES_KEY, JSON.stringify(serverQuotes));
+    
+    
+    mergeQuotes();
+    
+    
+    lastSyncTime = Date.now();
+    localStorage.setItem(LAST_SYNC_KEY, lastSyncTime.toString());
+    updateSyncStatus();
+    
+    return true;
+  } catch (error) {
+    console.error('Sync failed:', error);
+    syncStatus.textContent = 'Sync failed';
+    return false;
+  }
+}
+
+
+function mergeQuotes() {
+  
+  const quoteMap = new Map();
+  quotes.forEach(quote => quoteMap.set(quote.id, quote));
+  
+  
+  let hasConflicts = false;
+  serverQuotes.forEach(serverQuote => {
+    const existingQuote = quoteMap.get(serverQuote.id);
+    
+    if (!existingQuote) {
+      
+      quotes.push(serverQuote);
+    } else if (existingQuote.source === 'local' && 
+               existingQuote.text !== serverQuote.text) {
+      
+      hasConflicts = true;
+      Object.assign(existingQuote, serverQuote);
+    }
+  });
+  
+  
+  saveQuotes();
+  
+  
+  if (hasConflicts) {
+    showConflictNotification();
+  }
+  
+  
+  populateCategories();
+  filterQuotes();
+}
+
+
+function showConflictNotification() {
+  const notification = document.createElement('div');
+  notification.className = 'conflict-notification';
+  notification.innerHTML = `
+    <p>Some of your local quotes were updated by the server.</p>
+    <div class="conflict-actions">
+      <button onclick="this.parentElement.parentElement.remove()">Dismiss</button>
+      <button onclick="location.reload()">Refresh</button>
+    </div>
+  `;
+  document.body.appendChild(notification);
+  
+  
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 10000);
 }
 
 
@@ -45,11 +179,11 @@ function loadQuotes() {
   } else {
     
     quotes = [
-      { text: "The only way to do great work is to love what you do.", category: "inspiration" },
-      { text: "Innovation distinguishes between a leader and a follower.", category: "business" },
-      { text: "Your time is limited, don't waste it living someone else's life.", category: "life" },
-      { text: "Stay hungry, stay foolish.", category: "inspiration" },
-      { text: "The journey of a thousand miles begins with one step.", category: "life" }
+      { id: '1', text: "The only way to do great work is to love what you do.", category: "inspiration", source: "local", timestamp: Date.now() },
+      { id: '2', text: "Innovation distinguishes between a leader and a follower.", category: "business", source: "local", timestamp: Date.now() },
+      { id: '3', text: "Your time is limited, don't waste it living someone else's life.", category: "life", source: "local", timestamp: Date.now() },
+      { id: '4', text: "Stay hungry, stay foolish.", category: "inspiration", source: "local", timestamp: Date.now() },
+      { id: '5', text: "The journey of a thousand miles begins with one step.", category: "life", source: "local", timestamp: Date.now() }
     ];
     saveQuotes();
   }
@@ -79,14 +213,13 @@ function populateCategories() {
   });
 }
 
-
 function filterQuotes() {
   currentCategory = categoryFilter.value;
   
-  
+
   localStorage.setItem('selectedCategory', currentCategory);
   
-
+  
   const filteredQuotes = currentCategory === 'all' 
     ? quotes 
     : quotes.filter(quote => quote.category === currentCategory);
@@ -98,12 +231,14 @@ function filterQuotes() {
     
     const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
     const quote = filteredQuotes[randomIndex];
+    const sourceBadge = quote.source === 'server' ? ' <span style="color:blue">(from server)</span>' : '';
     quoteDisplay.innerHTML = `
-      <p>"${quote.text}"</p>
+      <p>"${quote.text}"${sourceBadge}</p>
       <span class="category">${quote.category}</span>
     `;
   }
 }
+
 
 function showRandomQuote() {
   filterQuotes();
@@ -140,6 +275,7 @@ function createAddQuoteForm() {
   quoteDisplay.insertAdjacentElement('afterend', formContainer);
 }
 
+
 function addQuote() {
   const textInput = document.getElementById('newQuoteText');
   const categoryInput = document.getElementById('newQuoteCategory');
@@ -153,7 +289,15 @@ function addQuote() {
   }
   
   
-  quotes.push({ text, category });
+  const newQuote = {
+    id: `local-${Date.now()}`,
+    text,
+    category,
+    source: 'local',
+    timestamp: Date.now()
+  };
+  
+  quotes.push(newQuote);
   
   
   saveQuotes();
@@ -172,6 +316,9 @@ function addQuote() {
   currentCategory = category;
   categoryFilter.value = category;
   filterQuotes();
+  
+
+  syncWithServer();
 }
 
 
@@ -218,6 +365,11 @@ function importFromJsonFile(event) {
         if (!quote.text || !quote.category) {
           throw new Error('Invalid quote format - each quote must have text and category');
         }
+        
+        
+        if (!quote.id) quote.id = `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        if (!quote.source) quote.source = 'imported';
+        if (!quote.timestamp) quote.timestamp = Date.now();
       }
       
       
@@ -230,6 +382,9 @@ function importFromJsonFile(event) {
       event.target.value = '';
       
       alert(`Successfully imported ${importedQuotes.length} quotes!`);
+      
+      
+      syncWithServer();
     } catch (error) {
       alert('Error importing quotes: ' + error.message);
     }
@@ -241,5 +396,6 @@ function importFromJsonFile(event) {
   
   fileReader.readAsText(file);
 }
+
 
 document.addEventListener('DOMContentLoaded', init);
