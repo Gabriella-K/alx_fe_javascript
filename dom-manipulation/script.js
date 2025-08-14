@@ -68,7 +68,12 @@ async function init() {
 // Fetch quotes from server
 async function fetchQuotesFromServer() {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     const serverData = await response.json();
     
     // Transform mock API data to our quote format
@@ -82,6 +87,23 @@ async function fetchQuotesFromServer() {
   } catch (error) {
     console.error('Failed to fetch quotes from server:', error);
     return [];
+  }
+}
+
+// Send quotes to server
+async function postQuotesToServer(quotesToSend) {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(quotesToSend)
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to post quotes to server:', error);
+    return null;
   }
 }
 
@@ -104,8 +126,14 @@ function updateSyncStatus() {
 // Sync with server
 async function syncWithServer() {
   try {
-    // Fetch quotes from server
+    // First fetch latest quotes from server
     const newServerQuotes = await fetchQuotesFromServer();
+    
+    // Then send our local quotes to server
+    const localQuotesToSend = quotes.filter(q => q.source === 'local');
+    if (localQuotesToSend.length > 0) {
+      await postQuotesToServer(localQuotesToSend);
+    }
     
     // Store server quotes
     serverQuotes = newServerQuotes;
