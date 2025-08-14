@@ -1,63 +1,138 @@
 
-const quotes = [
-  { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
-  { text: "Life is what happens when you're busy making other plans.", category: "Life" },
-  { text: "The future belongs to those who believe in the beauty of their dreams.", category: "Inspiration" }
+let quotes = [
+  { text: "The only way to do great work is to love what you do.", category: "inspiration" },
+  { text: "Innovation distinguishes between a leader and a follower.", category: "business" },
+  { text: "Your time is limited, don't waste it living someone else's life.", category: "life" },
+  { text: "Stay hungry, stay foolish.", category: "inspiration" },
+  { text: "The journey of a thousand miles begins with one step.", category: "life" }
 ];
 
 
-function renderQuote(targetEl, text, category) {
-  targetEl.textContent = "";                           
-  const p = document.createElement("p");
-  p.textContent = `"${text}"`;
-  const span = document.createElement("span");
-  span.className = "category";
-  span.textContent = ` — ${category}`;
-  targetEl.appendChild(p);
-  targetEl.appendChild(span);
+const quoteDisplay = document.getElementById('quoteDisplay');
+const newQuoteBtn = document.getElementById('newQuote');
+const categoryFilter = document.getElementById('categoryFilter');
+let currentCategory = 'all';
+
+
+function init() {
+  
+  newQuoteBtn.addEventListener('click', showRandomQuote);
+  categoryFilter.addEventListener('change', function() {
+    currentCategory = this.value;
+    showRandomQuote();
+  });
+  
+  
+  updateCategoryFilter();
+  
+  
+  showRandomQuote();
 }
 
 
 function showRandomQuote() {
-  const box = document.getElementById("quoteDisplay");
-  if (!quotes.length) {
-    box.textContent = "No quotes available. Please add one.";
+  let filteredQuotes = currentCategory === 'all' 
+    ? quotes 
+    : quotes.filter(quote => quote.category === currentCategory);
+  
+  if (filteredQuotes.length === 0) {
+    quoteDisplay.innerHTML = `<p>No quotes found in this category. Add some!</p>`;
     return;
   }
-  const { text, category } = quotes[Math.floor(Math.random() * quotes.length)];
-  renderQuote(box, text, category);
+  
+  const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+  const quote = filteredQuotes[randomIndex];
+  
+  quoteDisplay.innerHTML = `
+    <p>"${quote.text}"</p>
+    <span class="category">${quote.category}</span>
+  `;
 }
 
 
 function addQuote() {
-  const textEl = document.getElementById("newQuoteText");
-  const catEl  = document.getElementById("newQuoteCategory");
-  const text = textEl.value.trim();
-  const category = catEl.value.trim();
-
+  const textInput = document.getElementById('newQuoteText');
+  const categoryInput = document.getElementById('newQuoteCategory');
+  
+  const text = textInput.value.trim();
+  const category = categoryInput.value.trim().toLowerCase();
+  
   if (!text || !category) {
-    alert("Please fill out both fields!");
+    alert('Please enter both quote text and category');
     return;
   }
-
+  
   
   quotes.push({ text, category });
-
   
-  renderQuote(document.getElementById("quoteDisplay"), text, category);
-
-
-  textEl.value = "";
-  catEl.value = "";
+  
+  textInput.value = '';
+  categoryInput.value = '';
+  
+  
+  updateCategoryFilter(category);
+  
+  
+  currentCategory = category;
+  categoryFilter.value = category;
+  showRandomQuote();
 }
 
 
-document.getElementById("newQuote").addEventListener("click", showRandomQuote);
+function addCategory() {
+  const categoryInput = document.getElementById('newCategory');
+  const category = categoryInput.value.trim().toLowerCase();
+  
+  if (!category) {
+    alert('Please enter a category name');
+    return;
+  }
+  
+  
+  const existingCategories = Array.from(categoryFilter.options).map(opt => opt.value);
+  if (existingCategories.includes(category)) {
+    alert('This category already exists');
+    return;
+  }
+  
+  
+  const option = document.createElement('option');
+  option.value = category;
+  option.textContent = category;
+  categoryFilter.appendChild(option);
+  
+  
+  categoryInput.value = '';
+  
+  
+  currentCategory = category;
+  categoryFilter.value = category;
+  showRandomQuote();
+}
 
 
-window.quotes = quotes;
-window.showRandomQuote = showRandomQuote;
-window.addQuote = addQuote;
+function updateCategoryFilter(newCategory = null) {
+  
+  const categories = [...new Set(quotes.map(quote => quote.category))];
+  
+  
+  if (newCategory && !categories.includes(newCategory)) {
+    categories.push(newCategory);
+  }
+  
+  
+  while (categoryFilter.options.length > 1) {
+    categoryFilter.remove(1);
+  }
+  
+  
+  categories.sort().forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
+}
 
 
-showRandomQuote();
+document.addEventListener('DOMContentLoaded', init);
