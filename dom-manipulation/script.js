@@ -1,4 +1,3 @@
-
 let quotes = [
   { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
   { text: "Life is what happens when you're busy making other plans.", category: "Life" },
@@ -8,7 +7,6 @@ let quotes = [
 
 const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
-const addQuoteBtn = document.getElementById("addQuoteBtn");
 
 
 function showRandomQuote() {
@@ -20,17 +18,10 @@ function showRandomQuote() {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const { text, category } = quotes[randomIndex];
   
-  
-  quoteDisplay.innerHTML = "";
-  const quoteText = document.createElement("p");
-  quoteText.textContent = `"${text}"`;
-
-  const quoteCategory = document.createElement("span");
-  quoteCategory.textContent = `— ${category}`;
-  quoteCategory.classList.add("category");
-
-  quoteDisplay.appendChild(quoteText);
-  quoteDisplay.appendChild(quoteCategory);
+  quoteDisplay.innerHTML = `
+    <p>"${text}"</p>
+    <span class="category">— ${category}</span>
+  `;
 }
 
 
@@ -43,18 +34,23 @@ function addQuote() {
     return;
   }
 
-  
+
   quotes.push({ text: newText, category: newCategory });
 
+  
+  quoteDisplay.innerHTML = `
+    <p>"${newText}"</p>
+    <span class="category">— ${newCategory}</span>
+  `;
+
+  
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
-
-  alert("Quote added successfully!");
 }
 
 
 newQuoteBtn.addEventListener("click", showRandomQuote);
-addQuoteBtn.addEventListener("click", addQuote);
+document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
 
 
 showRandomQuote();
