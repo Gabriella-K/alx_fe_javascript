@@ -1,17 +1,17 @@
-
-const API_URL = 'https://jsonplaceholder.typicode.com/posts'; 
-const SYNC_INTERVAL = 30000; 
+// Configuration
+const API_URL = 'https://jsonplaceholder.typicode.com/posts'; // Mock API
+const SYNC_INTERVAL = 30000; // 30 seconds
 const LAST_SYNC_KEY = 'lastSyncTimestamp';
 const SERVER_QUOTES_KEY = 'serverQuotes';
 
-
+// State
 let quotes = [];
 let serverQuotes = [];
 let currentCategory = 'all';
 let syncInterval;
 let lastSyncTime = null;
 
-
+// DOM Elements
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
 const categoryFilter = document.getElementById('categoryFilter');
@@ -20,7 +20,7 @@ const importFile = document.getElementById('importFile');
 const syncNowBtn = document.getElementById('syncNow');
 const syncStatus = document.getElementById('syncStatus');
 
-
+// Initialize app
 async function init() {
   loadQuotes();
   loadServerQuotes();
@@ -30,30 +30,34 @@ async function init() {
   restoreLastCategory();
   filterQuotes();
   startSyncInterval();
-  await syncQuotes(); 
+  await syncQuotes(); // Initial sync
 }
 
-
+// Core sync function with POST support
 async function syncQuotes() {
   try {
-    
+    // 1. First push local changes to server using POST
+    const localChanges = quotes.filter(q => q.source === 'local' && !q.synced);
+    if (localChanges.length > 0) {
+      await postQuotesToServer(localChanges);
+      // Mark quotes as synced
+      quotes.forEach(q => {
+        if (q.source === 'local') q.synced = true;
+      });
+      saveQuotes();
+    }
+
+    // 2. Then fetch latest quotes from server
     const freshQuotes = await fetchQuotesFromServer();
-    
-    
     const newQuotes = findNewQuotes(freshQuotes);
     
     if (newQuotes.length > 0) {
-      
       serverQuotes = freshQuotes;
       localStorage.setItem(SERVER_QUOTES_KEY, JSON.stringify(serverQuotes));
       
-      
       const conflicts = mergeQuotes(newQuotes);
-      
-      
       updateUIAfterSync(newQuotes.length, conflicts);
     }
-    
     
     updateSyncStatus(true);
     
@@ -63,7 +67,32 @@ async function syncQuotes() {
   }
 }
 
+// POST quotes to server
+async function postQuotesToServer(quotesToSend) {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        quotes: quotesToSend,
+        timestamp: Date.now()
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Server rejected our quotes');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to POST quotes:', error);
+    throw error;
+  }
+}
 
+// GET quotes from server
 async function fetchQuotesFromServer() {
   const response = await fetch(API_URL, {
     method: 'GET',
@@ -79,9 +108,9 @@ async function fetchQuotesFromServer() {
   }));
 }
 
+// Helper functions
 function findNewQuotes(freshQuotes) {
   if (serverQuotes.length === 0) return freshQuotes;
-  
   const latestServerTimestamp = Math.max(...serverQuotes.map(q => q.timestamp));
   return freshQuotes.filter(q => q.timestamp > latestServerTimestamp);
 }
@@ -97,7 +126,7 @@ function mergeQuotes(newQuotes) {
       quotes.push(serverQuote);
     } 
     else if (localQuote.source === 'local' && localQuote.text !== serverQuote.text) {
-      Object.assign(localQuote, serverQuote); 
+      Object.assign(localQuote, serverQuote);
       conflictCount++;
     }
   });
@@ -120,6 +149,7 @@ function updateUIAfterSync(newCount, conflictCount) {
   }
 }
 
+// UI Notification System
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
@@ -137,7 +167,7 @@ function showNotification(message, type = 'info') {
   setTimeout(() => notification.remove(), 5000);
 }
 
-
+// Periodic Sync Management
 function startSyncInterval() {
   if (syncInterval) clearInterval(syncInterval);
   syncInterval = setInterval(() => syncQuotes(), SYNC_INTERVAL);
@@ -147,15 +177,13 @@ function updateSyncStatus(success) {
   lastSyncTime = Date.now();
   localStorage.setItem(LAST_SYNC_KEY, lastSyncTime.toString());
   
-  const statusText = success 
+  syncStatus.textContent = success 
     ? `Last synced: ${new Date(lastSyncTime).toLocaleTimeString()}`
     : 'Sync failed - will retry';
-    
-  syncStatus.textContent = statusText;
   syncStatus.className = success ? 'sync-success' : 'sync-failed';
 }
 
-
+// Data Management
 function loadQuotes() {
   const saved = localStorage.getItem('quotes');
   quotes = saved ? JSON.parse(saved) : getDefaultQuotes();
@@ -173,15 +201,15 @@ function saveQuotes() {
 
 function getDefaultQuotes() {
   return [
-    { id: '1', text: "The only way to do great work is to love what you do.", category: "inspiration", source: "local", timestamp: Date.now() },
-    { id: '2', text: "Innovation distinguishes between a leader and a follower.", category: "business", source: "local", timestamp: Date.now() },
-    { id: '3', text: "Your time is limited, don't waste it living someone else's life.", category: "life", source: "local", timestamp: Date.now() },
-    { id: '4', text: "Stay hungry, stay foolish.", category: "inspiration", source: "local", timestamp: Date.now() },
-    { id: '5', text: "The journey of a thousand miles begins with one step.", category: "life", source: "local", timestamp: Date.now() }
+    { id: '1', text: "The only way to do great work is to love what you do.", category: "inspiration", source: "local", synced: false, timestamp: Date.now() },
+    { id: '2', text: "Innovation distinguishes between a leader and a follower.", category: "business", source: "local", synced: false, timestamp: Date.now() },
+    { id: '3', text: "Your time is limited, don't waste it living someone else's life.", category: "life", source: "local", synced: false, timestamp: Date.now() },
+    { id: '4', text: "Stay hungry, stay foolish.", category: "inspiration", source: "local", synced: false, timestamp: Date.now() },
+    { id: '5', text: "The journey of a thousand miles begins with one step.", category: "life", source: "local", synced: false, timestamp: Date.now() }
   ];
 }
 
-
+// UI Functions
 function setupEventListeners() {
   newQuoteBtn.addEventListener('click', showRandomQuote);
   categoryFilter.addEventListener('change', filterQuotes);
@@ -256,7 +284,7 @@ function showRandomQuote() {
   filterQuotes();
 }
 
-
+// Data Operations
 function addQuote() {
   const text = document.getElementById('newQuoteText').value.trim();
   const category = document.getElementById('newQuoteCategory').value.trim().toLowerCase();
@@ -271,6 +299,7 @@ function addQuote() {
     text,
     category,
     source: 'local',
+    synced: false,
     timestamp: Date.now()
   };
   
@@ -320,6 +349,7 @@ function importFromJsonFile(event) {
         text: q.text || '',
         category: q.category || 'imported',
         source: 'imported',
+        synced: false,
         timestamp: q.timestamp || Date.now()
       }));
       
@@ -338,5 +368,5 @@ function importFromJsonFile(event) {
   reader.readAsText(file);
 }
 
-
+// Initialize
 document.addEventListener('DOMContentLoaded', init);
